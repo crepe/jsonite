@@ -45,8 +45,9 @@ class Jsonite
       end
 
       property name, options do |context|
+        options = { context: context, root: nil }.merge(options)
         resource = handler ? instance_exec(context, &handler) : send(name)
-        present resource, { context: context, root: nil }.merge(options)
+        Jsonite.present resource, options
       end
     end
 
