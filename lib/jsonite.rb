@@ -95,10 +95,10 @@ class Jsonite
 
   def links context = nil
     context ||= resource
-    self.class.links.each_with_object({}) do |(name, link), props|
+    self.class.links.each_with_object({}) do |(rel, link), links|
       catch :ignore do
         href = resource.instance_exec context, &link[:handler]
-        props[name] = { href: href }.merge link.except :handler
+        links[rel] = { href: href }.merge link.except :handler
       end
     end
   end

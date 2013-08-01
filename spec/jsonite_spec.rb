@@ -5,7 +5,7 @@ describe Jsonite do
 
   describe ".property" do
 
-    it "exposes a specified property when presenting an object" do
+    it "exposes a specified attribute when presenting an object" do
       presenter = Class.new Jsonite do
         property :name
       end
