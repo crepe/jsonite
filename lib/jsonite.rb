@@ -1,3 +1,5 @@
+require 'active_support/core_ext/object/blank'
+require 'active_support/json/encoding'
 require 'jsonite/helper'
 
 # A simple JSON presenter for hypermedia applications.
@@ -75,7 +77,9 @@ class Jsonite
   def as_json options = {}
     return resource.as_json options if instance_of? Jsonite
     context, options = options.delete(:context), defaults.merge(options)
-    properties(context).merge(_links: links(context)).as_json options
+    hash = properties context
+    hash.update _links: links(context) if self.class.links.present?
+    hash.as_json options
   end
 
   def properties context = nil
