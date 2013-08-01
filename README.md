@@ -1,6 +1,8 @@
 # Jsonite
 
-Tiny JSON presenter.
+A tiny, [HAL-compliant][1] JSON presenter.
+
+[1]: http://tools.ietf.org/html/draft-kelly-json-hal-05
 
 ## Install
 
@@ -26,10 +28,10 @@ class UserPresenter < Jsonite
   property :id
   property :email
 
-  embedded :todos, with: TodoPresenter
+  embed :todos, with: TodoPresenter
 
   link do |context|
-    context.url_for :users, self
+    context.user_url self
   end
 end
 ```
@@ -45,17 +47,19 @@ class UsersController < ApplicationController
   end
 
   #  {
-  #    "id": "8oljbpyjetu8"
+  #    "id": "8oljbpyjetu8",
   #    "email": "stephen@example.com",
-  #    "todos": [
-  #      {
-  #        "description": "Buy milk"
-  #      }
-  #    ],
   #    "_links": {
   #      "self":{
   #        "href": "http://example.com/users/8oljbpyjetu8"
   #      }
+  #    },
+  #    "_embedded": {
+  #      "todos": [
+  #        {
+  #          "description": "Buy milk"
+  #        }
+  #      ]
   #    }
   #  }
 end

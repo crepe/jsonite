@@ -2,9 +2,7 @@ require 'active_support/core_ext/object/blank'
 require 'active_support/json/encoding'
 require 'jsonite/helper'
 
-# A simple JSON presenter for hypermedia applications.
-#
-# Loosely complies with HAL:
+# A tiny, HAL-compliant JSON presenter.
 #
 # http://tools.ietf.org/html/draft-kelly-json-hal-05
 class Jsonite
@@ -34,25 +32,19 @@ class Jsonite
     end
 
     def property name, options = {}, &handler
-      properties[name] = handler || proc { send name }
+      handler ||= if options[:with]
+        proc { Jsonite.present send(name), with: options[:with] }
+      else
+        proc { send name }
+      end
+
+      properties[name] = handler
     end
 
     def properties *properties
       @properties ||= {}
       properties.map(&method(:property)) if properties.present?
       @properties
-    end
-
-    def embedded name, options = {}, &handler
-      unless options[:with].is_a?(Class) && options[:with] <= Jsonite
-        raise KeyError, ':with option must be a Jsonite'
-      end
-
-      property name, options do |context|
-        options = { context: context, root: nil }.merge(options)
-        resource = handler ? instance_exec(context, &handler) : send(name)
-        Jsonite.present resource, options
-      end
     end
 
     def link rel = :self, options = {}, &handler
@@ -63,9 +55,23 @@ class Jsonite
       @links ||= {}
     end
 
+    def embed rel, options = {}, &handler
+      if handler.nil?
+        presenter = options.fetch :with
+        handler = proc { Jsonite.present send(rel), with: presenter }
+      end
+
+      embedded[rel] = handler
+    end
+
+    def embedded
+      @embedded ||= {}
+    end
+
     def inherited presenter
       presenter.properties.update properties
       presenter.links.update links
+      presenter.embedded.update embedded
     end
 
   end
@@ -81,6 +87,7 @@ class Jsonite
     context, options = options.delete(:context), defaults.merge(options)
     hash = properties context
     hash.update _links: links(context) if self.class.links.present?
+    hash.update _embedded: embedded(context) if self.class.embedded.present?
     hash.as_json options
   end
 
@@ -95,10 +102,19 @@ class Jsonite
 
   def links context = nil
     context ||= resource
-    self.class.links.each_with_object({}) do |(name, link), props|
+    self.class.links.each_with_object({}) do |(rel, link), links|
       catch :ignore do
         href = resource.instance_exec context, &link[:handler]
-        props[name] = { href: href }.merge link.except :handler
+        links[rel] = { href: href }.merge link.except :handler
+      end
+    end
+  end
+
+  def embedded context = nil
+    context ||= resource
+    self.class.embedded.each_with_object({}) do |(name, handler), embedded|
+      catch :ignore do
+        embedded[name] = resource.instance_exec context, &handler
       end
     end
   end
