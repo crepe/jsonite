@@ -54,7 +54,7 @@ class Jsonite
     end
 
     def link rel = :self, options = {}, &handler
-      links[rel] = options.merge handler: handler
+      links[rel] = options.merge handler: Proc.new # enforce handler presence
     end
 
     def links
