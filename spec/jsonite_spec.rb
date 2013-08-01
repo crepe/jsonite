@@ -42,6 +42,15 @@ describe Jsonite do
       expect(json).to eq '{"screamed_name":"STEPHEN"}'
     end
 
+    it "ignores properties that throw :ignore" do
+      presenter = Class.new Jsonite do
+        property(:name) { name || throw(:ignore) }
+      end
+      presented = presenter.new OpenStruct.new
+      json = presented.to_json
+      expect(json).to eq '{}'
+    end
+
     it "presents with a presenter using the :with option" do
       todo_presenter = Class.new Jsonite do
         property :description
