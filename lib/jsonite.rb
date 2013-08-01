@@ -3,8 +3,10 @@ require 'active_support/json/encoding'
 require 'jsonite/helper'
 
 # A simple JSON presenter for hypermedia applications.
-# Loosely adheers to HAL: http://stateless.co/hal_specification.html
-
+#
+# Loosely complies with HAL:
+#
+# http://tools.ietf.org/html/draft-kelly-json-hal-05
 class Jsonite
 
   class << self
