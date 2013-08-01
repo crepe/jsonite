@@ -34,7 +34,13 @@ class Jsonite
     end
 
     def property name, options = {}, &handler
-      properties[name] = handler || proc { send name }
+      handler ||= if options[:with]
+        proc { Jsonite.present send(name), with: options[:with] }
+      else
+        proc { send name }
+      end
+
+      properties[name] = handler
     end
 
     def properties *properties
@@ -53,11 +59,8 @@ class Jsonite
 
     def embed rel, options = {}, &handler
       if handler.nil?
-        unless options[:with].is_a?(Class) && options[:with] <= Jsonite
-          raise KeyError, ':with option must be a Jsonite'
-        end
-
-        handler = proc { Jsonite.present send(rel), with: options[:with] }
+        presenter = options.fetch :with
+        handler = proc { Jsonite.present send(rel), with: presenter }
       end
 
       embedded[rel] = handler

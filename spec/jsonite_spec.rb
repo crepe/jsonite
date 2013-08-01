@@ -41,9 +41,26 @@ describe Jsonite do
       json = presented.to_json context: context
       expect(json).to eq '{"screamed_name":"STEPHEN"}'
     end
+
+    it "presents with a presenter using the :with option" do
+      todo_presenter = Class.new Jsonite do
+        property :description
+      end
+      user_presenter = Class.new Jsonite do
+        property :todos, with: todo_presenter
+      end
+      user = OpenStruct.new todos: [OpenStruct.new(description: 'Buy milk')]
+      presented_user = user_presenter.new user
+      json = presented_user.to_json
+      expect(json).to eq(
+        '{"todos":[{"description":"Buy milk"}]}'
+      )
+    end
+
   end
 
   describe ".link" do
+
     it "renders a link from a given block" do
       presenter = Class.new Jsonite do
         link :todos do
