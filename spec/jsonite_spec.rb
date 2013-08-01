@@ -94,4 +94,48 @@ describe Jsonite do
 
   end
 
+  describe ".embed" do
+
+    it "exposes a specified relationship when presenting an object" do
+      todo_presenter = Class.new Jsonite do
+        property :description
+      end
+      user_presenter = Class.new Jsonite do
+        embed :todos, with: todo_presenter
+      end
+      user = OpenStruct.new todos: [OpenStruct.new(description: 'Buy milk')]
+      presented_user = user_presenter.new user
+      json = presented_user.to_json
+      expect(json).to eq(
+        '{"_embedded":{"todos":[{"description":"Buy milk"}]}}'
+      )
+    end
+
+    it "requires :with option without an embed block" do
+      expect {
+        Class.new Jsonite do
+          embed :todos
+        end
+      }.to raise_exception KeyError
+    end
+
+    it "evaluates an embed block in the context of the presented object" do
+      todo_presenter = Class.new Jsonite do
+        property :description
+      end
+      user_presenter = Class.new Jsonite do
+        embed :todos do
+          Jsonite.present todos, with: todo_presenter # also the default
+        end
+      end
+      user = OpenStruct.new todos: [OpenStruct.new(description: 'Buy milk')]
+      presented_user = user_presenter.new user
+      json = presented_user.to_json
+      expect(json).to eq(
+        '{"_embedded":{"todos":[{"description":"Buy milk"}]}}'
+      )
+    end
+
+  end
+
 end

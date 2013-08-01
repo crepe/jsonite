@@ -43,18 +43,6 @@ class Jsonite
       @properties
     end
 
-    def embedded name, options = {}, &handler
-      unless options[:with].is_a?(Class) && options[:with] <= Jsonite
-        raise KeyError, ':with option must be a Jsonite'
-      end
-
-      property name, options do |context|
-        options = { context: context, root: nil }.merge(options)
-        resource = handler ? instance_exec(context, &handler) : send(name)
-        Jsonite.present resource, options
-      end
-    end
-
     def link rel = :self, options = {}, &handler
       links[rel] = options.merge handler: Proc.new # enforce handler presence
     end
@@ -63,9 +51,26 @@ class Jsonite
       @links ||= {}
     end
 
+    def embed rel, options = {}, &handler
+      if handler.nil?
+        unless options[:with].is_a?(Class) && options[:with] <= Jsonite
+          raise KeyError, ':with option must be a Jsonite'
+        end
+
+        handler = proc { Jsonite.present send(rel), with: options[:with] }
+      end
+
+      embedded[rel] = handler
+    end
+
+    def embedded
+      @embedded ||= {}
+    end
+
     def inherited presenter
       presenter.properties.update properties
       presenter.links.update links
+      presenter.embedded.update embedded
     end
 
   end
@@ -81,6 +86,7 @@ class Jsonite
     context, options = options.delete(:context), defaults.merge(options)
     hash = properties context
     hash.update _links: links(context) if self.class.links.present?
+    hash.update _embedded: embedded(context) if self.class.embedded.present?
     hash.as_json options
   end
 
@@ -99,6 +105,15 @@ class Jsonite
       catch :ignore do
         href = resource.instance_exec context, &link[:handler]
         links[rel] = { href: href }.merge link.except :handler
+      end
+    end
+  end
+
+  def embedded context = nil
+    context ||= resource
+    self.class.embedded.each_with_object({}) do |(name, handler), embedded|
+      catch :ignore do
+        embedded[name] = resource.instance_exec context, &handler
       end
     end
   end
