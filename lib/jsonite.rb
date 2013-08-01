@@ -2,9 +2,7 @@ require 'active_support/core_ext/object/blank'
 require 'active_support/json/encoding'
 require 'jsonite/helper'
 
-# A simple JSON presenter for hypermedia applications.
-#
-# Loosely complies with HAL:
+# A tiny, HAL-compliant JSON presenter.
 #
 # http://tools.ietf.org/html/draft-kelly-json-hal-05
 class Jsonite
