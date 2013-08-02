@@ -84,7 +84,8 @@ class Jsonite
 
   def as_json options = {}
     return resource.as_json options if instance_of? Jsonite
-    context, options = options.delete(:context), defaults.merge(options)
+    options = defaults.merge options
+    context = options.delete :context
     hash = properties context
     hash.update _links: links(context) if self.class.links.present?
     hash.update _embedded: embedded(context) if self.class.embedded.present?

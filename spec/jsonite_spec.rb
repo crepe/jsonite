@@ -37,8 +37,9 @@ describe Jsonite do
           string.upcase
         end
       end
-      presented = presenter.new OpenStruct.new name: 'Stephen'
-      json = presented.to_json context: context
+      resource = OpenStruct.new name: 'Stephen'
+      presented = presenter.new resource, context: context
+      json = presented.to_json
       expect(json).to eq '{"screamed_name":"STEPHEN"}'
     end
 
@@ -111,8 +112,8 @@ describe Jsonite do
           "https://example.com/#{args.join '/'}"
         end
       end
-      presented = presenter.new OpenStruct.new id: 1
-      json = presented.to_json context: context
+      presented = presenter.new OpenStruct.new(id: 1), context: context
+      json = presented.to_json
       expect(json).to eq(
         '{"_links":{"self":{"href":"https://example.com/users/1"}}}'
       )
