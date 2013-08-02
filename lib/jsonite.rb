@@ -2,6 +2,8 @@ require 'active_support/core_ext/object/blank'
 require 'active_support/json/encoding'
 require 'jsonite/helper'
 
+# = Jsonite
+#
 # A tiny, HAL-compliant JSON presenter.
 #
 # http://tools.ietf.org/html/draft-kelly-json-hal-05
@@ -9,6 +11,21 @@ class Jsonite
 
   class << self
 
+    # Presents a resource (or array of resources).
+    #
+    #   class UserPresenter < Jsonite
+    #     property :email
+    #   end
+    #   users = User.all
+    #   UserPresenter.present(users.first)
+    #   # => {"email"=>"stephen@example.com"}
+    #   UserPresenter.present(users)
+    #   # => [{"email"=>"stephen@example.com"}, ...]
+    #
+    # Configuration options:
+    # * <tt>:with</tt> - A specified presenter (defaults to `self`).
+    #
+    # All other options are passed along to <tt>#as_json</tt>.
     def present resource, options = {}
       presenter = options.delete(:with) { self }
 
@@ -31,6 +48,19 @@ class Jsonite
       end
     end
 
+    # Defines a property to be exposed during presentation.
+    #
+    #   class UserPresenter < Jsonite
+    #     property :email
+    #   end
+    #   # {
+    #   #   "email": "stephen@example.com"
+    #   # }
+    #
+    # Configuration options:
+    # * <tt>:with</tt> - A specified presenter. Ignored when a handler is
+    #   present. Useful when you want to embed a resource as a property (rather
+    #   than in the <tt>_embedded</tt> node).
     def property name, options = {}, &handler
       handler ||= if options[:with]
         proc { Jsonite.present send(name), with: options[:with] }
@@ -47,6 +77,43 @@ class Jsonite
       @properties
     end
 
+    # Defines a link.
+    #
+    #   class UserPresenter < Jsonite
+    #     link do |context|
+    #       context.user_url self
+    #     end
+    #     link :todos do |context|
+    #       context.user_todos_url self
+    #     end
+    #   end
+    #   # {
+    #   #   "_links": {
+    #   #     "self": {
+    #   #       "href": "http://example.com/users/8oljbpyjetu8"
+    #   #     },
+    #   #     "todos": {
+    #   #       "href": "http://example.com/users/8oljbpyjetu8/todos"
+    #   #     }
+    #   #   }
+    #   # }
+    #
+    # Configuration options are displayed as additional properties on a link.
+    #
+    #   class UserPresenter < Jsonite
+    #     link :todos, title: 'To-dos', templated: true do |context|
+    #       "#{context.user_todos_url self}{?done}
+    #     end
+    #   end
+    #   # {
+    #   #   "_links": {
+    #   #     "todos": {
+    #   #       "href": "http://example.com/users/8oljbpyjetu8/todos{?done}",
+    #   #       "title": "To-dos",
+    #   #       "templated": true
+    #   #     }
+    #   #   }
+    #   # }
     def link rel = :self, options = {}, &handler
       links[rel] = options.merge handler: Proc.new # enforce handler presence
     end
@@ -55,6 +122,27 @@ class Jsonite
       @links ||= {}
     end
 
+    # Defines an embedded resource.
+    #
+    #   class TodoPresenter < Jsonite
+    #     property :description
+    #   end
+    #   class UserPresenter < Jsonite
+    #     embed :todos, with: TodoPresenter
+    #   end
+    #   # {
+    #   #   "_embedded": {
+    #   #     "todos": [
+    #   #       {
+    #   #         "description": "Buy milk"
+    #   #       }
+    #   #     ]
+    #   #   }
+    #   # }
+    #
+    # Configuration options:
+    # * <tt>:with</tt> - A specified presenter. Required if a handler isn't
+    #   present.
     def embed rel, options = {}, &handler
       if handler.nil?
         presenter = options.fetch :with
@@ -82,10 +170,18 @@ class Jsonite
 
   attr_reader :resource, :defaults
 
+  # Initializes a new presenter instance with the given resource.
+  #
+  # Default options are passed to #as_json during presentation.
   def initialize resource, defaults = {}
     @resource, @defaults = resource, defaults
   end
 
+  # Returns a JSON representation (Hash) of the resource.
+  #
+  # Options:
+  # * <tt>:context</tt> - A context to pass a presenter instance while
+  #   rendering properties, links, and embedded resources.
   def as_json options = {}
     return resource.as_json options if instance_of? Jsonite
     options = defaults.merge options
