@@ -119,6 +119,19 @@ describe Jsonite do
       )
     end
 
+    it "can specify link properties" do
+      presenter = Class.new Jsonite do
+        link :todos, templated: true do
+          "/users/#{id}/todos{?done}"
+        end
+      end
+      presented = presenter.new OpenStruct.new id: 1
+      json = presented.to_json
+      expect(json).to eq(
+        '{"_links":{"todos":{"href":"/users/1/todos{?done}","templated":true}}}'
+      )
+    end
+
   end
 
   describe ".embed" do
