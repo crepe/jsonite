@@ -104,7 +104,9 @@ describe Jsonite do
 
     it "can pass an additional context to the link block" do
       presenter = Class.new Jsonite do
-        link { |context| context.url_for :users, id }
+        link :self do |context|
+          context.url_for :users, id
+        end
       end
       context = Module.new do
         module_function
