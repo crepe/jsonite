@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    jsonite (0.0.1)
+    jsonite (0.0.2)
       activesupport (>= 3.1.0)
 
 GEM

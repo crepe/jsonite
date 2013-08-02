@@ -4,8 +4,9 @@ require 'jsonite/version'
 Gem::Specification.new do |s|
   s.name        = 'jsonite'
   s.version     = Jsonite::VERSION
-  s.summary     = 'Tiny JSON presenter'
-  s.description = 'Tiny JSON presenter'
+  s.summary     = 'A tiny, HAL-compliant JSON presenter'
+  s.description = 'Jsonite provides a very simple DSL to build HAL-compliant JSON presenters.'
+  s.license     = 'MIT'
 
   s.files       = Dir['lib/**/*']
 
