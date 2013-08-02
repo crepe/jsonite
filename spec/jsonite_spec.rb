@@ -152,7 +152,7 @@ describe Jsonite do
       end
       user_presenter = Class.new Jsonite do
         embed :todos do
-          Jsonite.present todos, with: todo_presenter # also the default
+          Jsonite.present todos, with: todo_presenter
         end
       end
       user = OpenStruct.new todos: [OpenStruct.new(description: 'Buy milk')]
@@ -160,6 +160,54 @@ describe Jsonite do
       json = presented_user.to_json
       expect(json).to eq(
         '{"_embedded":{"todos":[{"description":"Buy milk"}]}}'
+      )
+    end
+
+    it "automatically passes contexts through" do
+      todo_presenter = Class.new Jsonite do
+        property :description do |context|
+          context.scream description
+        end
+      end
+      user_presenter = Class.new Jsonite do
+        embed :todos, with: todo_presenter
+      end
+      context = Module.new do
+        module_function
+        def scream string
+          string.upcase
+        end
+      end
+      user = OpenStruct.new todos: [OpenStruct.new(description: 'Buy milk')]
+      presented_user = user_presenter.new user, context: context
+      json = presented_user.to_json
+      expect(json).to eq(
+        '{"_embedded":{"todos":[{"description":"BUY MILK"}]}}'
+      )
+    end
+
+    it "can pass an additional context to the embed block" do
+      todo_presenter = Class.new Jsonite do
+        property :description do |context|
+          context.scream description
+        end
+      end
+      user_presenter = Class.new Jsonite do
+        embed :todos do |context|
+          Jsonite.present todos, with: todo_presenter, context: context
+        end
+      end
+      context = Module.new do
+        module_function
+        def scream string
+          string.upcase
+        end
+      end
+      user = OpenStruct.new todos: [OpenStruct.new(description: 'Buy milk')]
+      presented_user = user_presenter.new user, context: context
+      json = presented_user.to_json
+      expect(json).to eq(
+        '{"_embedded":{"todos":[{"description":"BUY MILK"}]}}'
       )
     end
 

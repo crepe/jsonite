@@ -58,7 +58,9 @@ class Jsonite
     def embed rel, options = {}, &handler
       if handler.nil?
         presenter = options.fetch :with
-        handler = proc { Jsonite.present send(rel), with: presenter }
+        handler = proc do |context|
+          Jsonite.present send(rel), with: presenter, context: context
+        end
       end
 
       embedded[rel] = handler
