@@ -46,22 +46,22 @@ class UsersController < ApplicationController
     render json: UserPresenter.new(user, context: self)
   end
 
-  #  {
-  #    "id": "8oljbpyjetu8",
-  #    "email": "stephen@example.com",
-  #    "_links": {
-  #      "self":{
-  #        "href": "http://example.com/users/8oljbpyjetu8"
-  #      }
-  #    },
-  #    "_embedded": {
-  #      "todos": [
-  #        {
-  #          "description": "Buy milk"
-  #        }
-  #      ]
-  #    }
-  #  }
+  # {
+  #   "id": "8oljbpyjetu8",
+  #   "email": "stephen@example.com",
+  #   "_links": {
+  #     "self":{
+  #       "href": "http://example.com/users/8oljbpyjetu8"
+  #     }
+  #   },
+  #   "_embedded": {
+  #     "todos": [
+  #       {
+  #         "description": "Buy milk"
+  #       }
+  #     ]
+  #   }
+  # }
 end
 ```
 
