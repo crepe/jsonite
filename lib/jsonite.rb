@@ -10,7 +10,7 @@ class Jsonite
   class << self
 
     def present resource, options = {}
-      presenter = options.fetch :with, self
+      presenter = options.delete(:with) { self }
 
       case resource
       when Jsonite
