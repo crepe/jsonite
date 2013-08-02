@@ -70,6 +70,8 @@ class Jsonite
       @embedded ||= {}
     end
 
+    private
+
     def inherited presenter
       presenter.properties.update properties
       presenter.links.update links
@@ -93,6 +95,8 @@ class Jsonite
     hash.update _embedded: embedded(context) if self.class.embedded.present?
     hash.as_json options
   end
+
+  private
 
   def properties context = nil
     context ||= resource
