@@ -102,7 +102,7 @@ class Jsonite
     #
     #   class UserPresenter < Jsonite
     #     link :todos, title: 'To-dos', templated: true do |context|
-    #       "#{context.user_todos_url self}{?done}
+    #       "#{context.user_todos_url self}{?done}"
     #     end
     #   end
     #   # {
