@@ -37,7 +37,7 @@ class Jsonite
           resource.to_ary.map do |r|
             present presenter.new(r), options.merge(root: nil)
           end
-        elsif resource.respond_to?(:as_json)
+        elsif resource.respond_to? :as_json
           present presenter.new(resource), options.merge(root: nil)
         else
           resource
