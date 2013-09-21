@@ -195,7 +195,6 @@ class Jsonite
   private
 
   def properties context = nil
-    context ||= resource
     self.class.properties.each_with_object({}) do |(name, handler), props|
       catch :ignore do
         props[name] = resource.instance_exec context, &handler
@@ -204,7 +203,6 @@ class Jsonite
   end
 
   def links context = nil
-    context ||= resource
     self.class.links.each_with_object({}) do |(rel, link), links|
       catch :ignore do
         href = resource.instance_exec context, &link[:handler]
@@ -214,7 +212,6 @@ class Jsonite
   end
 
   def embedded context = nil
-    context ||= resource
     self.class.embedded.each_with_object({}) do |(name, handler), embedded|
       catch :ignore do
         embedded[name] = resource.instance_exec context, &handler
