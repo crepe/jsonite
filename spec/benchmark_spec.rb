@@ -29,10 +29,10 @@ describe 'Jsonite performance' do
   it 'presents hundreds of objects very quickly' do
     time = Benchmark.realtime do |x|
       # 175 * 10 times = 1750 total presentations
-      10.times { UserPresenter.present(users) }
+      10.times { UserPresenter.present(users).as_json }
     end
 
-    time.should < 0.25
+    time.should < 0.1
   end
 
 end

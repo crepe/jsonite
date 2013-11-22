@@ -23,29 +23,25 @@ class Jsonite
     #   # => [{"email"=>"stephen@example.com"}, ...]
     #
     # Configuration options:
+    # * <tt>:root</tt> - A root key to wrap the resource with.
     # * <tt>:with</tt> - A specified presenter (defaults to `self`).
     #
-    # All other options are passed along to <tt>#as_json</tt>.
+    # All other options are passed along to <tt>#present</tt>.
     def present resource, options = {}
       presenter = options.delete(:with) { self }
 
-      case resource
-      when Jsonite
-        resource.as_json options
-      else
-        resource = if resource.respond_to?(:to_ary)
-          resource.to_ary.map do |r|
-            present presenter.new(r), options.merge(root: nil)
-          end
-        elsif resource.respond_to? :as_json
-          present presenter.new(resource), options.merge(root: nil)
-        else
-          resource
+      presented = if resource.is_a? Jsonite
+        resource.present options
+      elsif resource.respond_to?(:to_ary)
+        resource = resource.to_ary.map do |member|
+          presenter.new(member).present options.merge root: nil
         end
-
-        root = options.fetch :root, Helper.resource_name(resource)
-        root ? { root => resource } : resource
+      else
+        presenter.new(resource).present options.merge root: nil
       end
+
+      root = options.fetch(:root) { Helper.resource_name(resource) }
+      root ? { root => presented } : presented
     end
 
     # Defines a property to be exposed during presentation.
@@ -63,7 +59,7 @@ class Jsonite
     #   than in the <tt>_embedded</tt> node).
     def property name, options = {}, &handler
       handler ||= if options[:with]
-        proc { Jsonite.present send(name), with: options[:with] }
+        proc { options[:with].present send(name), root: nil }
       else
         proc { send name }
       end
@@ -147,7 +143,7 @@ class Jsonite
       if handler.nil?
         presenter = options.fetch :with
         handler = proc do |context|
-          Jsonite.present send(rel), with: presenter, context: context
+          presenter.present send(rel), context: context, root: nil
         end
       end
 
@@ -177,19 +173,29 @@ class Jsonite
     @resource, @defaults = resource, defaults
   end
 
-  # Returns a JSON representation (Hash) of the resource.
+  # Returns a raw representation (Hash) of the resource.
   #
   # Options:
   # * <tt>:context</tt> - A context to pass a presenter instance while
   #   rendering properties, links, and embedded resources.
-  def as_json options = {}
-    return resource.as_json options if instance_of? Jsonite
+  def present options = {}
     options = defaults.merge options
+
     context = options.delete :context
-    hash = properties context
-    hash.update _links: links(context) if self.class.links.present?
-    hash.update _embedded: embedded(context) if self.class.embedded.present?
-    hash.as_json options
+    presented = properties(context)
+    presented['_links'] = links(context) if self.class.links.present?
+    presented['_embedded'] = embedded(context) if self.class.embedded.present?
+
+    root = options.fetch(:root) { Helper.resource_name(resource) }
+    root ? { root => presented } : presented
+  end
+
+  # Returns a JSON-ready representation (Hash) of the resource.
+  #
+  # Options:
+  # * <tt>:root</tt>
+  def as_json options = {}
+    present(options).as_json options
   end
 
   private
@@ -197,7 +203,7 @@ class Jsonite
   def properties context = nil
     self.class.properties.each_with_object({}) do |(name, handler), props|
       catch :ignore do
-        props[name] = resource.instance_exec context, &handler
+        props[name.to_s] = resource.instance_exec context, &handler
       end
     end
   end
@@ -206,7 +212,7 @@ class Jsonite
     self.class.links.each_with_object({}) do |(rel, link), links|
       catch :ignore do
         href = resource.instance_exec context, &link[:handler]
-        links[rel] = { href: href }.merge link.except :handler
+        links[rel.to_s] = { href: href }.merge link.except :handler
       end
     end
   end
@@ -214,7 +220,7 @@ class Jsonite
   def embedded context = nil
     self.class.embedded.each_with_object({}) do |(name, handler), embedded|
       catch :ignore do
-        embedded[name] = resource.instance_exec context, &handler
+        embedded[name.to_s] = resource.instance_exec context, &handler
       end
     end
   end
