@@ -212,7 +212,7 @@ class Jsonite
     self.class.links.each_with_object({}) do |(rel, link), links|
       catch :ignore do
         href = resource.instance_exec context, &link[:handler]
-        links[rel.to_s] = { href: href }.merge link.except :handler
+        links[rel.to_s] = { 'href' => href }.merge link.except :handler
       end
     end
   end
