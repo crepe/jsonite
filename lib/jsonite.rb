@@ -219,9 +219,14 @@ class Jsonite
     else
       resource.send name
     end
+
     throw :ignore if options[:ignore_nil] && value.nil?
-    return value unless options[:with]
-    options[:with].present value, context: context, root: nil
+
+    if options[:with] && !value.nil?
+      return options[:with].present value, context: context, root: nil
+    end
+
+    value
   end
 
 end

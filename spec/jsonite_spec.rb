@@ -265,13 +265,21 @@ describe Jsonite do
     end
 
     it "ignores nil embeds when ignore_nil: true" do
-      user_presenter = Class.new Jsonite do
-        embed :best_friend, with: user_presenter, ignore_nil: true
-      end
+      user_presenter = Class.new Jsonite
+      user_presenter.embed :best_friend, with: user_presenter, ignore_nil: true
       user = OpenStruct.new
       presented_user = user_presenter.present user
       json = presented_user.to_json
       expect(json).to eq '{}'
+    end
+
+    it "allows nil embeds", focus: true do
+      user_presenter = Class.new Jsonite
+      user_presenter.embed :best_friend, with: user_presenter
+      user = OpenStruct.new
+      presented_user = user_presenter.present user
+      json = presented_user.to_json
+      expect(json).to eq '{"_embedded":{"best_friend":null}}'
     end
 
   end
