@@ -58,13 +58,7 @@ class Jsonite
     #   present. Useful when you want to embed a resource as a property (rather
     #   than in the <tt>_embedded</tt> node).
     def property name, options = {}, &handler
-      handler ||= if options[:with]
-        proc { options[:with].present send(name), root: nil }
-      else
-        proc { send name }
-      end
-
-      properties[name] = handler
+      properties[name.to_s] = { handler: handler }.merge options
     end
 
     def properties *properties
@@ -111,7 +105,7 @@ class Jsonite
     #   #   }
     #   # }
     def link rel = :self, options = {}, &handler
-      links[rel] = options.merge handler: Proc.new # enforce handler presence
+      links[rel.to_s] = { handler: Proc.new }.merge options # require handler
     end
 
     def links
@@ -140,14 +134,8 @@ class Jsonite
     # * <tt>:with</tt> - A specified presenter. Required if a handler isn't
     #   present.
     def embed rel, options = {}, &handler
-      if handler.nil?
-        presenter = options.fetch :with
-        handler = proc do |context|
-          presenter.present send(rel), context: context, root: nil
-        end
-      end
-
-      embedded[rel] = handler
+      options.fetch :with unless handler
+      embedded[rel.to_s] = { handler: handler }.merge options
     end
 
     def embedded
@@ -201,28 +189,33 @@ class Jsonite
   private
 
   def properties context = nil
-    self.class.properties.each_with_object({}) do |(name, handler), props|
-      catch :ignore do
-        props[name.to_s] = resource.instance_exec context, &handler
-      end
+    self.class.properties.each_with_object({}) do |(name, options), props|
+      catch(:ignore) { props[name] = fetch name, context, options }
     end
   end
 
   def links context = nil
     self.class.links.each_with_object({}) do |(rel, link), links|
       catch :ignore do
-        href = resource.instance_exec context, &link[:handler]
-        links[rel.to_s] = { 'href' => href }.merge link.except :handler
+        href = fetch rel, context, link
+        links[rel] = { 'href' => href }.merge link.except :handler
       end
     end
   end
 
   def embedded context = nil
-    self.class.embedded.each_with_object({}) do |(name, handler), embedded|
-      catch :ignore do
-        embedded[name.to_s] = resource.instance_exec context, &handler
-      end
+    self.class.embedded.each_with_object({}) do |(name, options), embedded|
+      catch(:ignore) { embedded[name] = fetch name, context, options }
     end
+  end
+
+  def fetch name, context, options
+    if options[:handler]
+      return resource.instance_exec context, &options[:handler]
+    end
+    value = resource.send name
+    return value unless options[:with]
+    options[:with].present value, context: context, root: nil
   end
 
 end
