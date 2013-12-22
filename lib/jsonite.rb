@@ -57,6 +57,7 @@ class Jsonite
     # * <tt>:with</tt> - A specified presenter. Ignored when a handler is
     #   present. Useful when you want to embed a resource as a property (rather
     #   than in the <tt>_embedded</tt> node).
+    # * <tt>:ignore_nil</tt> - Ignore `nil`.
     def property name, options = {}, &handler
       properties[name.to_s] = { handler: handler }.merge options
     end
@@ -133,6 +134,7 @@ class Jsonite
     # Configuration options:
     # * <tt>:with</tt> - A specified presenter. Required if a handler isn't
     #   present.
+    # * <tt>:ignore_nil</tt> - Ignore `nil`.
     def embed rel, options = {}, &handler
       options.fetch :with unless handler
       embedded[rel.to_s] = { handler: handler }.merge options
@@ -171,8 +173,10 @@ class Jsonite
 
     context = options.delete :context
     presented = properties(context)
-    presented['_links'] = links(context) if self.class.links.present?
-    presented['_embedded'] = embedded(context) if self.class.embedded.present?
+    _links = links context
+    presented['_links'] = _links if _links.present?
+    _embedded = embedded context
+    presented['_embedded'] = _embedded if _embedded.present?
 
     root = options.fetch(:root) { Helper.resource_name(resource) }
     root ? { root => presented } : presented
@@ -210,10 +214,12 @@ class Jsonite
   end
 
   def fetch name, context, options
-    if options[:handler]
-      return resource.instance_exec context, &options[:handler]
+    value = if options[:handler]
+      resource.instance_exec context, &options[:handler]
+    else
+      resource.send name
     end
-    value = resource.send name
+    throw :ignore if options[:ignore_nil] && value.nil?
     return value unless options[:with]
     options[:with].present value, context: context, root: nil
   end

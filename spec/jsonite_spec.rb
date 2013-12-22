@@ -72,6 +72,15 @@ describe Jsonite do
       expect(json).to eq '{"screamed_name":"STEPHEN"}'
     end
 
+    it "ignores nil properties with ignore_nil: true" do
+      presenter = Class.new Jsonite do
+        property :name, ignore_nil: true
+      end
+      presented = presenter.new OpenStruct.new
+      json = presented.to_json
+      expect(json).to eq '{}'
+    end
+
     it "ignores properties that throw :ignore" do
       presenter = Class.new Jsonite do
         property(:name) { name || throw(:ignore) }
@@ -253,6 +262,16 @@ describe Jsonite do
       expect(json).to eq(
         '{"_embedded":{"todos":[{"description":"BUY MILK"}]}}'
       )
+    end
+
+    it "ignores nil embeds when ignore_nil: true" do
+      user_presenter = Class.new Jsonite do
+        embed :best_friend, with: user_presenter, ignore_nil: true
+      end
+      user = OpenStruct.new
+      presented_user = user_presenter.present user
+      json = presented_user.to_json
+      expect(json).to eq '{}'
     end
 
   end
