@@ -11,7 +11,23 @@ class Jsonite
 
   class << self
 
-    # Presents a resource (or array of resources).
+    # Configures whether root keys are automatically derived from
+    # resource classes during presentation. Can be overrided.
+    #
+    # Jsonite.include_root_in_json = true
+    #
+    # Defaults to ActiveRecord::Base.include_root_in_json, or false
+    # if ActiveRecord isn't defined.
+    attr_writer :include_root_in_json
+
+    def include_root_in_json
+      return @include_root_in_json if defined? @include_root_in_json
+
+      @include_root_in_json = defined?(ActiveRecord) && \
+        ActiveRecord::Base.include_root_in_json
+    end
+
+    # Presents a resource (or collection of resources).
     #
     #   class UserPresenter < Jsonite
     #     property :email
@@ -23,25 +39,42 @@ class Jsonite
     #   # => [{"email"=>"stephen@example.com"}, ...]
     #
     # Configuration options:
-    # * <tt>:root</tt> - A root key to wrap the resource with.
     # * <tt>:with</tt> - A specified presenter (defaults to `self`).
+    # * <tt>:context</tt> - A context to pass a presenter instance while
+    #   rendering properties, links, and embedded resources.
+    # * <tt>:root</tt> - A root key to wrap the resource with.
     #
     # All other options are passed along to <tt>#present</tt>.
     def present resource, options = {}
-      presenter = options.delete(:with) { self }
+      presenter = options.fetch :with, self
 
-      presented = if resource.is_a? Jsonite
-        resource.present options
-      elsif resource.respond_to?(:to_ary)
-        resource = resource.to_ary.map do |member|
-          presenter.new(member).present options.merge root: nil
+      if resource.respond_to? :to_ary
+        resource.to_ary.map do |member|
+          presenter.new(member, options).present
         end
       else
-        presenter.new(resource).present options.merge root: nil
+        presenter.new(resource, options).present
       end
+    end
 
-      root = options.fetch(:root) { Helper.resource_name(resource) }
-      root ? { root => presented } : presented
+    # Sets a hash of default options to be used during presentation.
+    #
+    #   class UserPresenter < Jsonite
+    #     defaults root: 'user'
+    #   end
+    #   UserPresenter.present(User.first)
+    #   # {
+    #   #   "user": {
+    #   #     "email": "stephen@example.com"
+    #   #   }
+    #   # }
+    #
+    # Configuration options:
+    # * <tt>:root</tt> - A root key to wrap the presented resource in.
+    def defaults options = nil
+      @defaults ||= {}
+      @defaults.update options if options
+      @defaults
     end
 
     # Defines a property to be exposed during presentation.
@@ -147,6 +180,7 @@ class Jsonite
     private
 
     def inherited presenter
+      presenter.defaults.update defaults
       presenter.properties.update properties
       presenter.links.update links
       presenter.embedded.update embedded
@@ -160,7 +194,7 @@ class Jsonite
   #
   # Default options are passed to #as_json during presentation.
   def initialize resource, defaults = {}
-    @resource, @defaults = resource, defaults
+    @resource, @defaults = resource, self.class.defaults.merge(defaults)
   end
 
   # Returns a raw representation (Hash) of the resource.
@@ -168,24 +202,25 @@ class Jsonite
   # Options:
   # * <tt>:context</tt> - A context to pass a presenter instance while
   #   rendering properties, links, and embedded resources.
+  # * <tt>:root</tt> - A root key to wrap the presented resource in.
   def present options = {}
     options = defaults.merge options
-
     context = options.delete :context
-    presented = properties(context)
+
+    presented = properties context
     _links = links context
     presented['_links'] = _links if _links.present?
     _embedded = embedded context
     presented['_embedded'] = _embedded if _embedded.present?
 
-    root = options.fetch(:root) { Helper.resource_name(resource) }
-    root ? { root => presented } : presented
+    root = options.fetch(:root) { !!Jsonite.include_root_in_json }
+    root = Helper.resource_name resource if root == true
+    root ? { root.to_s => presented } : presented
   end
 
   # Returns a JSON-ready representation (Hash) of the resource.
   #
-  # Options:
-  # * <tt>:root</tt>
+  # Options: see #present
   def as_json options = {}
     present(options).as_json options
   end

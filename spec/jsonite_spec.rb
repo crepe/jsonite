@@ -30,6 +30,38 @@ describe Jsonite do
       expect(presented).to eq "name"=>"Stephen"
     end
 
+    context 'root: true' do
+
+      it 'wraps the resource in a root key derived from the resource class' do
+        presented = presenter.present resource, root: true
+        expect(presented).to eq "open_struct"=>{"name"=>"Stephen"}
+      end
+
+    end
+
+    context 'root: String' do
+
+      it 'wraps the resource in the given root key' do
+        presented = presenter.present resource, root: 'user'
+        expect(presented).to eq "user"=>{"name"=>"Stephen"}
+      end
+
+    end
+
+  end
+
+  describe '.defaults' do
+
+    it 'sets a hash of options to be used when presenting' do
+      presenter = Class.new Jsonite do
+        defaults root: 'user'
+        property :name
+      end
+      presented = presenter.new OpenStruct.new(name: 'Stephen')
+      json = presented.to_json
+      expect(json).to eq '{"user":{"name":"Stephen"}}'
+    end
+
   end
 
   describe ".property" do
@@ -280,6 +312,20 @@ describe Jsonite do
       presented_user = user_presenter.present user
       json = presented_user.to_json
       expect(json).to eq '{"_embedded":{"best_friend":null}}'
+    end
+
+  end
+
+  describe '.include_root_in_json' do
+
+    it 'wraps presentations in a root key derived from the resource class' do
+      Jsonite.stub(include_root_in_json: true)
+      presenter = Class.new Jsonite do
+        property :name
+      end
+      presented = presenter.new OpenStruct.new(name: 'Stephen')
+      json = presented.to_json
+      expect(json).to eq '{"open_struct":{"name":"Stephen"}}'
     end
 
   end
