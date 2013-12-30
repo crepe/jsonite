@@ -65,9 +65,7 @@ class UsersController < ApplicationController
   #   "count": 12,
   #   "_embedded": {
   #     "users": [
-  #       {
-  #         ...
-  #       }
+  #       # ...
   #     ]
   #   }
   # }
