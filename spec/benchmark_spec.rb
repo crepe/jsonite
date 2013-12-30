@@ -32,7 +32,7 @@ describe 'Jsonite performance' do
       10.times { UserPresenter.present(users).as_json }
     end
 
-    time.should < 0.1
+    time.should < 0.2
   end
 
 end

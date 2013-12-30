@@ -1,8 +1,10 @@
-# Jsonite
+# Jsonite [![Build Status][1]][2]
 
-A tiny, [HAL-compliant][1] JSON presenter.
+A tiny, [HAL-compliant][3] JSON presenter.
 
-[1]: http://tools.ietf.org/html/draft-kelly-json-hal-05
+[1]: https://travis-ci.org/barrelage/jsonite.png
+[2]: https://travis-ci.org/barrelage/jsonite
+[3]: http://tools.ietf.org/html/draft-kelly-json-hal-05
 
 ## Install
 
@@ -37,29 +39,57 @@ end
 ```
 
 ``` rb
+# users_presenter.rb
+require 'user_presenter'
+
+class UsersPresenter < Jsonite
+  property :count
+
+  embed :users, with: UserPresenter do |context|
+    self
+  end
+end
+```
+
+``` rb
 # users_controller.rb
+require 'users_presenter'
 require 'user_presenter'
 
 class UsersController < ApplicationController
+  def index
+    users = User.all
+    render json: UsersPresenter.new(users, context: self)
+  end
+  # {
+  #   "count": 12,
+  #   "_embedded": {
+  #     "users": [
+  #       {
+  #         ...
+  #       }
+  #     ]
+  #   }
+  # }
+
   def show
     user = User.find params[:id]
     render json: UserPresenter.new(user, context: self)
   end
-
   # {
   #   "id": "8oljbpyjetu8",
   #   "email": "stephen@example.com",
-  #   "_links": {
-  #     "self":{
-  #       "href": "http://example.com/users/8oljbpyjetu8"
-  #     }
-  #   },
   #   "_embedded": {
   #     "todos": [
   #       {
   #         "description": "Buy milk"
   #       }
   #     ]
+  #   },
+  #   "_links": {
+  #     "self":{
+  #       "href": "http://example.com/users/8oljbpyjetu8"
+  #     }
   #   }
   # }
 end
