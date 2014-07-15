@@ -97,7 +97,7 @@ end
 
 (The MIT License)
 
-© 2013 Stephen Celis <stephen@stephencelis.com>, Evan Owen <kainosnoema@gmail.com>
+© 2013–2014 Stephen Celis <stephen@stephencelis.com>, Evan Owen <kainosnoema@gmail.com>
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the “Software”), to deal
