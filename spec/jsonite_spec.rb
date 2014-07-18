@@ -32,6 +32,34 @@ describe Jsonite do
 
   end
 
+  describe ".presents" do
+
+    before do
+      type = resource_class
+      Class.new Jsonite do
+        presents type
+        property :name
+      end
+    end
+
+    let :resource_class do
+      Class.new OpenStruct
+    end
+
+    let :resource do
+      resource_class.new name: 'Stephen', age: 30
+    end
+
+    it "sets a default presenter for a given resource class" do
+      presented = Jsonite.present resource
+      expect(presented).to eq "name"=>"Stephen"
+
+      presented = Jsonite.present [resource, resource]
+      expect(presented).to eq [{"name"=>"Stephen"}, {"name"=>"Stephen"}]
+    end
+
+  end
+
   describe ".property" do
 
     it "exposes a specified attribute when presenting an object" do
