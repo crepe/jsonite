@@ -10,6 +10,8 @@ require 'jsonite/lets_proxy'
 # http://tools.ietf.org/html/draft-kelly-json-hal-05
 class Jsonite
 
+  @@mapping = {}
+
   class << self
 
     # Presents a resource (or array of resources).
@@ -29,20 +31,33 @@ class Jsonite
     #
     # All other options are passed along to <tt>#present</tt>.
     def present resource, **options
-      presenter = options.delete(:with) { self }
-
       presented = if resource.is_a? Jsonite
         resource.present options
       elsif resource.respond_to? :to_ary
         resource.to_ary.map do |member|
-          presenter.new(member).present options.merge root: nil
+          present member, options.merge(root: nil)
         end
       else
+        presenter = options.fetch :with do
+          self == Jsonite and @@mapping[resource.class] or self
+        end
         presenter.new(resource).present options.merge root: nil
       end
 
       root = options.fetch(:root) { Helper.resource_name resource }
       root ? { root => presented } : presented
+    end
+
+    # Sets a default presenter for a given resource class.
+    #
+    #   class UserPresenter < Jsonite
+    #     presents User
+    #     property :email
+    #   end
+    #   Jsonite.present(User.first)
+    #   # => {"email"=>"stephen@example.com"}
+    def presents resource_class
+      @@mapping[resource_class] = self
     end
 
     # Defines a property to be exposed during presentation.
