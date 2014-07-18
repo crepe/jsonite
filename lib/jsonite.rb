@@ -73,8 +73,8 @@ class Jsonite
     #   present. Useful when you want to embed a resource as a property (rather
     #   than in the <tt>_embedded</tt> node).
     # * <tt>:ignore_nil</tt> - Ignore `nil`.
-    def property name, **options, &handler
-      properties[name.to_s] = { handler: handler }.merge options
+    def property name, type = nil, **options, &handler
+      properties[name.to_s] = { type: type, handler: handler }.merge options
     end
 
     def properties *properties
