@@ -301,7 +301,7 @@ describe Jsonite do
       expect(json).to eq '{}'
     end
 
-    it "allows nil embeds", focus: true do
+    it "allows nil embeds" do
       user_presenter = Class.new Jsonite
       user_presenter.embed :best_friend, with: user_presenter
       user = OpenStruct.new
