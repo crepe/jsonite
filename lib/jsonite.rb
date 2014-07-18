@@ -32,7 +32,7 @@ class Jsonite
 
       presented = if resource.is_a? Jsonite
         resource.present options
-      elsif resource.respond_to?(:to_ary)
+      elsif resource.respond_to? :to_ary
         resource = resource.to_ary.map do |member|
           presenter.new(member).present options.merge root: nil
         end
@@ -40,7 +40,7 @@ class Jsonite
         presenter.new(resource).present options.merge root: nil
       end
 
-      root = options.fetch(:root) { Helper.resource_name(resource) }
+      root = options.fetch(:root) { Helper.resource_name resource }
       root ? { root => presented } : presented
     end
 
