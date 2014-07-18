@@ -28,7 +28,7 @@ class Jsonite
     # * <tt>:with</tt> - A specified presenter (defaults to `self`).
     #
     # All other options are passed along to <tt>#present</tt>.
-    def present resource, options = {}
+    def present resource, **options
       presenter = options.delete(:with) { self }
 
       presented = if resource.is_a? Jsonite
@@ -59,7 +59,7 @@ class Jsonite
     #   present. Useful when you want to embed a resource as a property (rather
     #   than in the <tt>_embedded</tt> node).
     # * <tt>:ignore_nil</tt> - Ignore `nil`.
-    def property name, options = {}, &handler
+    def property name, **options, &handler
       properties[name.to_s] = { handler: handler }.merge options
     end
 
@@ -136,7 +136,7 @@ class Jsonite
     # * <tt>:with</tt> - A specified presenter. Required if a handler isn't
     #   present.
     # * <tt>:ignore_nil</tt> - Ignore `nil`.
-    def embed rel, options = {}, &handler
+    def embed rel, **options, &handler
       options.fetch :with unless handler
       embedded[rel.to_s] = { handler: handler }.merge options
     end
