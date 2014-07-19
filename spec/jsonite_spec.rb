@@ -5,29 +5,46 @@ describe Jsonite do
 
   describe ".present" do
 
-    let :presenter do
-      Class.new Jsonite do
-        property :name
+    context "a hash" do
+
+      let :resource do
+        {"name"=>"Stephen"}
       end
+
+      it "passes through unmodified" do
+        presented = Jsonite.present resource
+        expect(presented).to eq resource
+      end
+
     end
 
-    let :resource do
-      OpenStruct.new name: 'Stephen'
-    end
+    context "a registered resource" do
 
-    it "presents a single resource" do
-      presented = Jsonite.present resource, with: presenter
-      expect(presented).to eq "name"=>"Stephen"
-    end
+      let :presenter do
+        Class.new Jsonite do
+          property :name
+        end
+      end
 
-    it "presents an array of resources" do
-      presented = Jsonite.present [resource, resource], with: presenter
-      expect(presented).to eq [{"name"=>"Stephen"}, {"name"=>"Stephen"}]
-    end
+      let :resource do
+        OpenStruct.new name: 'Stephen'
+      end
 
-    it "defaults to using itself as presenter class" do
-      presented = presenter.present resource
-      expect(presented).to eq "name"=>"Stephen"
+      it "presents a single resource" do
+        presented = Jsonite.present resource, with: presenter
+        expect(presented).to eq "name"=>"Stephen"
+      end
+
+      it "presents an array of resources" do
+        presented = Jsonite.present [resource, resource], with: presenter
+        expect(presented).to eq [{"name"=>"Stephen"}, {"name"=>"Stephen"}]
+      end
+
+      it "defaults to using itself as presenter class" do
+        presented = presenter.present resource
+        expect(presented).to eq "name"=>"Stephen"
+      end
+
     end
 
   end
