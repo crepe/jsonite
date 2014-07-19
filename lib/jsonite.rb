@@ -169,10 +169,14 @@ class Jsonite
 
     private
 
-    def inherited presenter
-      presenter.properties.update properties
-      presenter.links.update links
-      presenter.embedded.update embedded
+    def inherited subclass
+      if name.nil? and resource_class = @@mapping.invert[self]
+        subclass.presents resource_class
+      end
+
+      subclass.properties.update properties
+      subclass.links.update links
+      subclass.embedded.update embedded
     end
 
   end
@@ -252,4 +256,8 @@ class Jsonite
     value
   end
 
+end
+
+def Jsonite resource_class
+  Class.new(Jsonite).tap { |presenter| presenter.presents resource_class }
 end

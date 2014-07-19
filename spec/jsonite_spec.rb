@@ -35,9 +35,7 @@ describe Jsonite do
   describe ".presents" do
 
     before do
-      type = resource_class
-      Class.new Jsonite do
-        presents type
+      Class.new(Jsonite(resource_class)) do
         property :name
       end
     end
