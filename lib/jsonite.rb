@@ -45,6 +45,7 @@ class Jsonite
         presenter = options.fetch :with do
           self == Jsonite and @@mapping[resource.class] or self
         end
+        return resource if presenter == Jsonite
         presenter.new(resource).present options.merge root: nil
       end
 
