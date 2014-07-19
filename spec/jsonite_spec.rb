@@ -215,7 +215,7 @@ describe Jsonite do
 
     it "ignores nil properties with ignore_nil: true" do
       presenter = Class.new Jsonite do
-        property :name, ignore_nil: true
+        property :name, ignore: :nil?
       end
       presented = presenter.new OpenStruct.new
       json = presented.to_json
@@ -407,7 +407,7 @@ describe Jsonite do
 
     it "ignores nil embeds when ignore_nil: true" do
       user_presenter = Class.new Jsonite
-      user_presenter.embed :best_friend, with: user_presenter, ignore_nil: true
+      user_presenter.embed :best_friend, with: user_presenter, ignore: :nil?
       user = OpenStruct.new
       presented_user = user_presenter.present user
       json = presented_user.to_json
