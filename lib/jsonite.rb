@@ -281,6 +281,11 @@ class Jsonite
 
 end
 
+# Returns a new Jsonite subclass that presents the given resource class.
+#
+#   class UserPresenter < Jsonite(User)
+#     property :name
+#   end
 def Jsonite resource_class
   Class.new(Jsonite).tap { |presenter| presenter.presents resource_class }
 end
