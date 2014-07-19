@@ -9,7 +9,11 @@ require 'jsonite/helper'
 # http://tools.ietf.org/html/draft-kelly-json-hal-05
 class Jsonite
 
-  @@mapping = {}
+  @@mapping = Hash.new do |mapping, key|
+    if ancestor = key.ancestors.find { |a| mapping.key? a }
+      mapping[key] = mapping[ancestor]
+    end
+  end
 
   class << self
 

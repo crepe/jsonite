@@ -56,6 +56,12 @@ describe Jsonite do
       expect(presented).to eq [{"name"=>"Stephen"}, {"name"=>"Stephen"}]
     end
 
+    it "presents resource subclasses" do
+      subclass = Class.new resource_class
+      presented = Jsonite.present subclass.new name: 'Stephen', age: 30
+      expect(presented).to eq "name"=>"Stephen"
+    end
+
   end
 
   describe ".property" do
