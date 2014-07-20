@@ -52,7 +52,7 @@ class Jsonite
       root ? { root => presented } : presented
     end
 
-    # Sets a default presenter for a given resource class.
+    # Sets the current presenter as the default for a given resource class.
     #
     #   class UserPresenter < Jsonite
     #     presents User
@@ -62,6 +62,17 @@ class Jsonite
     #   # => {"email"=>"stephen@example.com"}
     def presents resource_class
       @@mapping[resource_class] = self
+    end
+
+    # Returns the resource class registered to the current presenter.
+    #
+    #   class UserPresenter < Jsonite(User)
+    #     property :email
+    #   end
+    #   UserPresenter.resource_class
+    #   # => User
+    def resource_class
+      @@mapping.invert[self]
     end
 
     # Defines a property to be exposed during presentation.
@@ -175,9 +186,7 @@ class Jsonite
     private
 
     def inherited subclass
-      if name.nil? and resource_class = @@mapping.invert[self]
-        subclass.presents resource_class
-      end
+      subclass.presents resource_class if name.nil? && resource_class
 
       subclass.properties.update properties
       subclass.links.update links
