@@ -7,7 +7,7 @@ Document = Struct.new(:name, :path, :content_type, :related_documents) do
   end
 end
 
-class DocumentPresenter < Jsonite
+class DocumentPresenter < Jsonite Document
   property :name
   property :path
   property :content_type
@@ -25,7 +25,7 @@ User = Struct.new(:name, :age, :friends, :documents) do
   end
 end
 
-class UserPresenter < Jsonite
+class UserPresenter < Jsonite User
   property :name
   property :age
   property(:location) { '37.788079, -122.401288' }
