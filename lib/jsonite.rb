@@ -51,6 +51,9 @@ class Jsonite
     #
     # All other options are passed along to <tt>#present</tt>.
     def present resource, **options
+      root = options.delete(:root) { Jsonite.include_root_in_json }
+      root = Helper.resource_name resource if root == true
+
       presented = if resource.is_a? Jsonite
         resource.present options
       elsif resource.respond_to? :to_ary
@@ -65,8 +68,6 @@ class Jsonite
         presenter.new(resource).present options.merge root: nil
       end
 
-      root = options.fetch :root, Jsonite.include_root_in_json
-      root = Helper.resource_name resource if root == true
       root ? { root => presented } : presented
     end
 
