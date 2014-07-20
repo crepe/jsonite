@@ -18,6 +18,22 @@ class Jsonite
 
   class << self
 
+    # Configures whether root keys are automatically derived from
+    # resource classes during presentation. Can be overrided.
+    #
+    # Jsonite.include_root_in_json = true
+    #
+    # Defaults to ActiveRecord::Base.include_root_in_json, or false
+    # if ActiveRecord isn't defined.
+    attr_writer :include_root_in_json
+
+    def include_root_in_json
+      return @include_root_in_json if defined? @include_root_in_json
+
+      @include_root_in_json = defined?(ActiveRecord) && \
+        ActiveRecord::Base.include_root_in_json
+    end
+
     # Presents a resource (or array of resources).
     #
     #   class UserPresenter < Jsonite
@@ -49,7 +65,8 @@ class Jsonite
         presenter.new(resource).present options.merge root: nil
       end
 
-      root = options.fetch(:root) { Helper.resource_name resource }
+      root = options.fetch :root, Jsonite.include_root_in_json
+      root = Helper.resource_name resource if root == true
       root ? { root => presented } : presented
     end
 
@@ -250,7 +267,8 @@ class Jsonite
     _embedded = embedded proxied, context
     presented['_embedded'] = _embedded if _embedded.present?
 
-    root = options.fetch(:root) { Helper.resource_name(resource) }
+    root = options.fetch :root, Jsonite.include_root_in_json
+    root = Helper.resource_name resource if root == true
     root ? { root => presented } : presented
   end
 

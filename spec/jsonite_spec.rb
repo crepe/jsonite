@@ -45,6 +45,65 @@ describe Jsonite do
         expect(presented).to eq :name=>"Stephen"
       end
 
+      context "root: true" do
+
+        it "wraps a single resource in a class-derived root key" do
+          presented = presenter.present resource, root: true
+          expect(presented).to eq "open_struct"=>{:name=>"Stephen"}
+        end
+
+        it "wraps an array of resources without a class-derivable root key" do
+          presented = presenter.present [resource, resource], root: true
+          expect(presented).to eq(
+            "array"=>[{:name=>"Stephen"}, {:name=>"Stephen"}]
+          )
+        end
+
+        context "nested relationship" do
+
+          it "does not wrap nested presentation" do
+            todo_presenter = Class.new Jsonite do
+              property :description
+            end
+            presenter.property :todos, with: todo_presenter
+            resource.todos = [OpenStruct.new(description: 'Buy milk')]
+            presented = presenter.present resource, root: true
+            expect(presented).to eq(
+              "open_struct"=>{
+                :name=>"Stephen", :todos=>[{:description=>'Buy milk'}]
+              }
+            )
+          end
+
+        end
+
+      end
+
+      context "root: String" do
+
+        it "wraps a single resource with the given root key" do
+          presented = presenter.present resource, root: 'user'
+          expect(presented).to eq "user"=>{:name=>"Stephen"}
+        end
+
+        it "wraps an array of resources with the given root key" do
+          presented = presenter.present [resource, resource], root: 'users'
+          expect(presented).to eq(
+            "users"=>[{:name=>"Stephen"}, {:name=>"Stephen"}]
+          )
+        end
+      end
+
+      context '.include_root_in_json' do
+
+        it 'wraps presentations in a root key derived from the resource class' do
+          Jsonite.stub include_root_in_json: true
+          presented = presenter.present resource
+          expect(presented).to eq "open_struct"=>{:name=>"Stephen"}
+        end
+
+      end
+
     end
 
   end
