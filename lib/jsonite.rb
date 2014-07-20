@@ -223,7 +223,7 @@ class Jsonite
     options = defaults.merge options
 
     context = options.delete :context
-    presented = properties(context)
+    presented = properties context
     _links = links context
     presented['_links'] = _links if _links.present?
     _embedded = embedded context
