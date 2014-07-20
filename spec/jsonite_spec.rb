@@ -93,7 +93,7 @@ describe Jsonite do
 
   describe ".presents" do
 
-    before do
+    let! :presenter do
       Class.new(Jsonite(resource_class)) do
         property :name
       end
@@ -119,6 +119,32 @@ describe Jsonite do
       subclass = Class.new resource_class
       presented = Jsonite.present subclass.new name: 'Stephen', age: 30
       expect(presented).to eq "name"=>"Stephen"
+    end
+
+  end
+
+  describe ".resource_class" do
+
+    let! :presenter do
+      Class.new(Jsonite(resource_class)) do
+        property :name
+      end
+    end
+
+    let :resource_class do
+      Class.new OpenStruct
+    end
+
+    let :resource do
+      resource_class.new name: 'Stephen', age: 30
+    end
+
+    it "exposes the registered resource class for a given presenter" do
+      expect(presenter.resource_class).to eq resource_class
+    end
+
+    it "returns nil for a presenter without registered resource class" do
+      expect(Jsonite.resource_class).to be_nil
     end
 
   end
