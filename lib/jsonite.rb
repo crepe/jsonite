@@ -90,6 +90,24 @@ class Jsonite
     #   present. Useful when you want to embed a resource as a property (rather
     #   than in the <tt>_embedded</tt> node).
     # * <tt>:ignore_nil</tt> - Ignore `nil`.
+    #
+    # All other options are stored on the presenter class's properties hash,
+    # which could be used, for example, to generate documentation.
+    #
+    #   class UserPresenter < Jsonite
+    #     property :email, type: String
+    #   end
+    #   UserPresenter.properties[:email][:type]
+    #   # => String
+    #
+    # As a shorthand, type can also be documented if passed as the second
+    # argument.
+    #
+    #   class UserPresenter < Jsonite
+    #     property :email, String
+    #   end
+    #   UserPresenter.properties[:email][:type]
+    #   # => String
     def property name, type = nil, **options, &handler
       properties[name] = { type: type, handler: handler }.merge options
     end
