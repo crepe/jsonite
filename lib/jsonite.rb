@@ -193,14 +193,6 @@ class Jsonite
       @embedded ||= {}
     end
 
-    def let name, &handler
-      lets[name.to_s] = handler
-    end
-
-    def lets
-      @lets ||= {}
-    end
-
     private
 
     def inherited subclass
