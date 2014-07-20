@@ -160,6 +160,13 @@ describe Jsonite do
       expect(json).to eq '{"name":"Stephen"}'
     end
 
+    it "tracks additional information about an attribute" do
+      presenter = Class.new Jsonite do
+        property :name, String, foo: 'bar'
+      end
+      expect(presenter.properties[:name]).to include :type=>String, :foo=>"bar"
+    end
+
     it "evaluates a property block in the context of the presented object" do
       presenter = Class.new Jsonite do
         property :screamed_name do
