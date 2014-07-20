@@ -8,7 +8,7 @@ describe Jsonite do
     context "a hash" do
 
       let :resource do
-        {"name"=>"Stephen"}
+        {:name=>"Stephen"}
       end
 
       it "passes through unmodified" do
@@ -32,17 +32,17 @@ describe Jsonite do
 
       it "presents a single resource" do
         presented = Jsonite.present resource, with: presenter
-        expect(presented).to eq "name"=>"Stephen"
+        expect(presented).to eq :name=>"Stephen"
       end
 
       it "presents an array of resources" do
         presented = Jsonite.present [resource, resource], with: presenter
-        expect(presented).to eq [{"name"=>"Stephen"}, {"name"=>"Stephen"}]
+        expect(presented).to eq [{:name=>"Stephen"}, {:name=>"Stephen"}]
       end
 
       it "defaults to using itself as presenter class" do
         presented = presenter.present resource
-        expect(presented).to eq "name"=>"Stephen"
+        expect(presented).to eq :name=>"Stephen"
       end
 
     end
@@ -109,16 +109,16 @@ describe Jsonite do
 
     it "sets a default presenter for a given resource class" do
       presented = Jsonite.present resource
-      expect(presented).to eq "name"=>"Stephen"
+      expect(presented).to eq :name=>"Stephen"
 
       presented = Jsonite.present [resource, resource]
-      expect(presented).to eq [{"name"=>"Stephen"}, {"name"=>"Stephen"}]
+      expect(presented).to eq [{:name=>"Stephen"}, {:name=>"Stephen"}]
     end
 
     it "presents resource subclasses" do
       subclass = Class.new resource_class
       presented = Jsonite.present subclass.new name: 'Stephen', age: 30
-      expect(presented).to eq "name"=>"Stephen"
+      expect(presented).to eq :name=>"Stephen"
     end
 
   end
