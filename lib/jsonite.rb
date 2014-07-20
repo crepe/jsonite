@@ -90,7 +90,7 @@ class Jsonite
     #   than in the <tt>_embedded</tt> node).
     # * <tt>:ignore_nil</tt> - Ignore `nil`.
     def property name, type = nil, **options, &handler
-      properties[name.to_s] = { type: type, handler: handler }.merge options
+      properties[name] = { type: type, handler: handler }.merge options
     end
 
     def properties *properties
@@ -137,7 +137,7 @@ class Jsonite
     #   #   }
     #   # }
     def link rel = :self, options = {}, &handler
-      links[rel.to_s] = { handler: Proc.new }.merge options # require handler
+      links[rel] = { handler: Proc.new }.merge options # require handler
     end
 
     def links
@@ -168,7 +168,7 @@ class Jsonite
     # * <tt>:ignore_nil</tt> - Ignore `nil`.
     def embed rel, **options, &handler
       options.fetch :with unless handler
-      embedded[rel.to_s] = { handler: handler }.merge options
+      embedded[rel] = { handler: handler }.merge options
     end
 
     def embedded
