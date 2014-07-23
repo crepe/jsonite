@@ -106,7 +106,8 @@ class Jsonite
     # * <tt>:with</tt> - A specified presenter. Ignored when a handler is
     #   present. Useful when you want to embed a resource as a property (rather
     #   than in the <tt>_embedded</tt> node).
-    # * <tt>:ignore_nil</tt> - Ignore `nil`.
+    # * <tt>:ignore</tt> - Don't include the property in the payload if the
+    #   given symbol sent or proc called returns true.
     #
     # All other options are stored on the presenter class's properties hash,
     # which could be used, for example, to generate documentation.
@@ -201,7 +202,8 @@ class Jsonite
     # Configuration options:
     # * <tt>:with</tt> - A specified presenter. Required if a handler isn't
     #   present.
-    # * <tt>:ignore_nil</tt> - Ignore `nil`.
+    # * <tt>:ignore</tt> - Don't include the resource in the payload if the
+    #   given symbol sent or proc called returns true.
     def embed rel, **options, &handler
       options.fetch :with unless handler
       embedded[rel] = { handler: handler }.merge options
@@ -290,7 +292,9 @@ class Jsonite
       resource.send name
     end
 
-    throw :ignore if options[:ignore_nil] && value.nil?
+    if options[:ignore]
+      throw :ignore if value.instance_exec context, &options[:ignore].to_proc
+    end
 
     if options[:with] && !value.nil?
       return options[:with].present value, context: context, root: nil
