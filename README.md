@@ -2,8 +2,8 @@
 
 A tiny, [HAL-compliant][3] JSON presenter.
 
-[1]: http://img.shields.io/travis/barrelage/jsonite.svg?style=flat
-[2]: https://travis-ci.org/barrelage/jsonite
+[1]: http://img.shields.io/travis/crepe/jsonite.svg?style=flat
+[2]: https://travis-ci.org/crepe/jsonite
 [3]: http://tools.ietf.org/html/draft-kelly-json-hal-05
 
 ## Install
