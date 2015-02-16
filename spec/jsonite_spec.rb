@@ -32,6 +32,48 @@ describe Jsonite do
 
   end
 
+  describe ":root" do
+    let :model do
+      Class.new do
+        include ActiveModel::Model
+        attr_accessor :name
+
+        def self.name
+          'User'
+        end
+      end
+    end
+
+    let :resource do
+      model.new name: 'Stephen'
+    end
+
+    let :relation do
+      [resource, resource].tap do |relation|
+        class << relation
+          def model_name() first.model_name end
+          def to_ary() self end
+        end
+      end
+    end
+
+    let :presenter do
+      Class.new Jsonite do
+        property :name
+      end
+    end
+
+    it "presents a singular resource with a singular root" do
+      presented = presenter.present resource
+      expect(presented).to eq "user"=>{"name"=>"Stephen"}
+    end
+
+    it "presents a collection with a plural root" do
+      presented = presenter.present relation
+      expect(presented).to eq "users"=>[{"name"=>"Stephen"},{"name"=>"Stephen"}]
+    end
+  end
+
   describe ".property" do
 
     it "exposes a specified attribute when presenting an object" do
