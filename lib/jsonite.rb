@@ -1,6 +1,7 @@
 require 'active_support/core_ext/object/blank'
 require 'active_support/json/encoding'
 require 'jsonite/helper'
+require 'jsonite/lets_proxy'
 
 # = Jsonite
 #
@@ -144,6 +145,15 @@ class Jsonite
       @embedded ||= {}
     end
 
+    # Defines a memoized "virtual" method on the resource.
+    #
+    #   class UserPresenter < Jsonite
+    #     let(:full_name) { "#{first_name} #{last_name}" }
+    #     property :full_name
+    #   end
+    #   # {
+    #   #   "full_name": "Stephen Celis"
+    #   # }
     def let name, &handler
       lets[name.to_s] = handler
     end
@@ -158,6 +168,7 @@ class Jsonite
       presenter.properties.update properties
       presenter.links.update links
       presenter.embedded.update embedded
+      presenter.lets.update lets
     end
 
   end
@@ -180,10 +191,12 @@ class Jsonite
     options = defaults.merge options
 
     context = options.delete :context
-    presented = properties(context)
-    _links = links context
+    proxied = LetsProxy.new resource, context, self.class.lets
+
+    presented = properties proxied, context
+    _links = links proxied, context
     presented['_links'] = _links if _links.present?
-    _embedded = embedded context
+    _embedded = embedded proxied, context
     presented['_embedded'] = _embedded if _embedded.present?
 
     root = options.fetch(:root) { Helper.resource_name(resource) }
@@ -200,32 +213,32 @@ class Jsonite
 
   private
 
-  def properties context = nil
+  def properties rsrc, context = nil
     self.class.properties.each_with_object({}) do |(name, options), props|
-      catch(:ignore) { props[name] = fetch name, context, options }
+      catch(:ignore) { props[name] = fetch name, rsrc, context, options }
     end
   end
 
-  def links context = nil
+  def links rsrc, context = nil
     self.class.links.each_with_object({}) do |(rel, link), links|
       catch :ignore do
-        href = fetch rel, context, link
+        href = fetch rel, rsrc, context, link
         links[rel] = { 'href' => href }.merge link.except :handler
       end
     end
   end
 
-  def embedded context = nil
-    self.class.embedded.each_with_object({}) do |(name, options), embedded|
-      catch(:ignore) { embedded[name] = fetch name, context, options }
+  def embedded rsrc, context = nil
+    self.class.embedded.each_with_object({}) do |(name, options), embeds|
+      catch(:ignore) { embeds[name] = fetch name, rsrc, context, options }
     end
   end
 
-  def fetch name, context, options
+  def fetch name, rsrc, context, options
     value = if options[:handler]
-      resource.instance_exec context, &options[:handler]
+      rsrc.instance_exec context, &options[:handler]
     else
-      resource.send name
+      rsrc.__send__ name
     end
 
     throw :ignore if options[:ignore_nil] && value.nil?

@@ -326,4 +326,40 @@ describe Jsonite do
 
   end
 
+  describe ".let" do
+
+    it "defines a virtual resource method" do
+      user_presenter = Class.new Jsonite
+      user_presenter.let(:full_name) { "#{first_name} #{last_name}" }
+      user_presenter.property(:full_name)
+      user = OpenStruct.new first_name: "John", last_name: "Doe"
+      presented_user = user_presenter.present user
+      json = presented_user.to_json
+      expect(json).to eq '{"full_name":"John Doe"}'
+    end
+
+    it "provides the context as a block argument" do
+      user_presenter = Class.new Jsonite
+      user_presenter.let(:user_agent) { |ctx| ctx.user_agent }
+      user_presenter.property(:user_agent)
+      user = OpenStruct.new
+      ctx = OpenStruct.new(user_agent: "curl")
+      presented_user = user_presenter.present user, context: ctx
+      json = presented_user.to_json
+      expect(json).to eq '{"user_agent":"curl"}'
+    end
+
+    it "allows other lets to be called" do
+      user_presenter = Class.new Jsonite
+      user_presenter.let(:first_name) { "John" }
+      user_presenter.let(:last_name) { "Doe" }
+      user_presenter.let(:full_name) { "#{first_name} #{last_name}" }
+      user_presenter.property(:full_name)
+      user = OpenStruct.new
+      presented_user = user_presenter.present user
+      json = presented_user.to_json
+      expect(json).to eq '{"full_name":"John Doe"}'
+    end
+
+  end
 end
