@@ -191,7 +191,7 @@ class Jsonite
     options = defaults.merge options
 
     context = options.delete :context
-    proxied = LetsProxy.new resource, context, self.class.lets
+    proxied = proxied_resource context
 
     presented = properties proxied, context
     _links = links proxied, context
@@ -213,32 +213,37 @@ class Jsonite
 
   private
 
-  def properties rsrc, context = nil
+  def proxied_resource context = nil
+    lets = self.class.lets
+    lets.any? ? LetsProxy.new(resource, context, lets) : resource
+  end
+
+  def properties object, context = nil
     self.class.properties.each_with_object({}) do |(name, options), props|
-      catch(:ignore) { props[name] = fetch name, rsrc, context, options }
+      catch(:ignore) { props[name] = fetch name, object, context, options }
     end
   end
 
-  def links rsrc, context = nil
+  def links object, context = nil
     self.class.links.each_with_object({}) do |(rel, link), links|
       catch :ignore do
-        href = fetch rel, rsrc, context, link
+        href = fetch rel, object, context, link
         links[rel] = { 'href' => href }.merge link.except :handler
       end
     end
   end
 
-  def embedded rsrc, context = nil
+  def embedded object, context = nil
     self.class.embedded.each_with_object({}) do |(name, options), embeds|
-      catch(:ignore) { embeds[name] = fetch name, rsrc, context, options }
+      catch(:ignore) { embeds[name] = fetch name, object, context, options }
     end
   end
 
-  def fetch name, rsrc, context, options
+  def fetch name, object, context, options
     value = if options[:handler]
-      rsrc.instance_exec context, &options[:handler]
+      object.instance_exec context, &options[:handler]
     else
-      rsrc.__send__ name
+      object.__send__ name
     end
 
     throw :ignore if options[:ignore_nil] && value.nil?
