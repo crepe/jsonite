@@ -5,29 +5,105 @@ describe Jsonite do
 
   describe ".present" do
 
-    let :presenter do
-      Class.new Jsonite do
-        property :name
+    context "a hash" do
+
+      let :resource do
+        {:name=>"Stephen"}
       end
+
+      it "passes through unmodified" do
+        presented = Jsonite.present resource
+        expect(presented).to eq resource
+      end
+
     end
 
-    let :resource do
-      OpenStruct.new name: 'Stephen'
-    end
+    context "a registered resource" do
 
-    it "presents a single resource" do
-      presented = Jsonite.present resource, with: presenter
-      expect(presented).to eq "name"=>"Stephen"
-    end
+      let :presenter do
+        Class.new Jsonite do
+          property :name
+        end
+      end
 
-    it "presents an array of resources" do
-      presented = Jsonite.present [resource, resource], with: presenter
-      expect(presented).to eq [{"name"=>"Stephen"}, {"name"=>"Stephen"}]
-    end
+      let :resource do
+        OpenStruct.new name: 'Stephen'
+      end
 
-    it "defaults to using itself as presenter class" do
-      presented = presenter.present resource
-      expect(presented).to eq "name"=>"Stephen"
+      it "presents a single resource" do
+        presented = Jsonite.present resource, with: presenter
+        expect(presented).to eq :name=>"Stephen"
+      end
+
+      it "presents an array of resources" do
+        presented = Jsonite.present [resource, resource], with: presenter
+        expect(presented).to eq [{:name=>"Stephen"}, {:name=>"Stephen"}]
+      end
+
+      it "defaults to using itself as presenter class" do
+        presented = presenter.present resource
+        expect(presented).to eq :name=>"Stephen"
+      end
+
+      context "root: true" do
+
+        it "wraps a single resource in a class-derived root key" do
+          presented = presenter.present resource, root: true
+          expect(presented).to eq "open_struct"=>{:name=>"Stephen"}
+        end
+
+        it "wraps an array of resources without a class-derivable root key" do
+          presented = presenter.present [resource, resource], root: true
+          expect(presented).to eq(
+            "array"=>[{:name=>"Stephen"}, {:name=>"Stephen"}]
+          )
+        end
+
+        context "nested relationship" do
+
+          it "does not wrap nested presentation" do
+            todo_presenter = Class.new Jsonite do
+              property :description
+            end
+            presenter.property :todos, with: todo_presenter
+            resource.todos = [OpenStruct.new(description: 'Buy milk')]
+            presented = presenter.present resource, root: true
+            expect(presented).to eq(
+              "open_struct"=>{
+                :name=>"Stephen", :todos=>[{:description=>'Buy milk'}]
+              }
+            )
+          end
+
+        end
+
+      end
+
+      context "root: String" do
+
+        it "wraps a single resource with the given root key" do
+          presented = presenter.present resource, root: 'user'
+          expect(presented).to eq "user"=>{:name=>"Stephen"}
+        end
+
+        it "wraps an array of resources with the given root key" do
+          presented = presenter.present [resource, resource], root: 'users'
+          expect(presented).to eq(
+            "users"=>[{:name=>"Stephen"}, {:name=>"Stephen"}]
+          )
+        end
+      end
+
+      context '.include_root_in_json' do
+
+        it 'wraps presentations in a root key derived from the resource class' do
+          Jsonite.stub include_root_in_json: true
+          presented = presenter.present resource
+          expect(presented).to eq "open_struct"=>{:name=>"Stephen"}
+        end
+
+      end
+
     end
 
   end
@@ -74,6 +150,64 @@ describe Jsonite do
     end
   end
 
+  describe ".presents" do
+
+    let! :presenter do
+      Class.new(Jsonite(resource_class)) do
+        property :name
+      end
+    end
+
+    let :resource_class do
+      Class.new OpenStruct
+    end
+
+    let :resource do
+      resource_class.new name: 'Stephen', age: 30
+    end
+
+    it "sets a default presenter for a given resource class" do
+      presented = Jsonite.present resource
+      expect(presented).to eq :name=>"Stephen"
+
+      presented = Jsonite.present [resource, resource]
+      expect(presented).to eq [{:name=>"Stephen"}, {:name=>"Stephen"}]
+    end
+
+    it "presents resource subclasses" do
+      subclass = Class.new resource_class
+      presented = Jsonite.present subclass.new name: 'Stephen', age: 30
+      expect(presented).to eq :name=>"Stephen"
+    end
+
+  end
+
+  describe ".resource_class" do
+
+    let! :presenter do
+      Class.new(Jsonite(resource_class)) do
+        property :name
+      end
+    end
+
+    let :resource_class do
+      Class.new OpenStruct
+    end
+
+    let :resource do
+      resource_class.new name: 'Stephen', age: 30
+    end
+
+    it "exposes the registered resource class for a given presenter" do
+      expect(presenter.resource_class).to eq resource_class
+    end
+
+    it "returns nil for a presenter without registered resource class" do
+      expect(Jsonite.resource_class).to be_nil
+    end
+
+  end
+
   describe ".property" do
 
     it "exposes a specified attribute when presenting an object" do
@@ -83,6 +217,13 @@ describe Jsonite do
       presented = presenter.new OpenStruct.new name: 'Stephen'
       json = presented.to_json
       expect(json).to eq '{"name":"Stephen"}'
+    end
+
+    it "tracks additional information about an attribute" do
+      presenter = Class.new Jsonite do
+        property :name, String, foo: 'bar'
+      end
+      expect(presenter.properties[:name]).to include :type=>String, :foo=>"bar"
     end
 
     it "evaluates a property block in the context of the presented object" do
@@ -315,7 +456,7 @@ describe Jsonite do
       expect(json).to eq '{}'
     end
 
-    it "allows nil embeds", focus: true do
+    it "allows nil embeds" do
       user_presenter = Class.new Jsonite
       user_presenter.embed :best_friend, with: user_presenter
       user = OpenStruct.new

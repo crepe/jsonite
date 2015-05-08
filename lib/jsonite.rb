@@ -10,7 +10,29 @@ require 'jsonite/lets_proxy'
 # http://tools.ietf.org/html/draft-kelly-json-hal-05
 class Jsonite
 
+  @@mapping = Hash.new do |mapping, key|
+    if ancestor = key.ancestors.find { |a| mapping.key? a }
+      mapping[key] = mapping[ancestor]
+    end
+  end
+
   class << self
+
+    # Configures whether root keys are automatically derived from
+    # resource classes during presentation. Can be overrided.
+    #
+    # Jsonite.include_root_in_json = true
+    #
+    # Defaults to ActiveRecord::Base.include_root_in_json, or false
+    # if ActiveRecord isn't defined.
+    attr_writer :include_root_in_json
+
+    def include_root_in_json
+      return @include_root_in_json if defined? @include_root_in_json
+
+      @include_root_in_json = defined?(ActiveRecord) && \
+        ActiveRecord::Base.include_root_in_json
+    end
 
     # Presents a resource (or array of resources).
     #
@@ -28,21 +50,48 @@ class Jsonite
     # * <tt>:with</tt> - A specified presenter (defaults to `self`).
     #
     # All other options are passed along to <tt>#present</tt>.
-    def present resource, options = {}
-      presenter = options.delete(:with) { self }
+    def present resource, **options
+      root = options.delete(:root) { Jsonite.include_root_in_json }
+      root = Helper.resource_name resource if root == true
 
       presented = if resource.is_a? Jsonite
         resource.present options
-      elsif resource.respond_to?(:to_ary)
+      elsif resource.respond_to? :to_ary
         resource.to_ary.map do |member|
-          presenter.new(member).present options.merge root: nil
+          present member, options.merge(root: nil)
         end
       else
+        presenter = options.fetch :with do
+          self == Jsonite and @@mapping[resource.class] or self
+        end
+        return resource if presenter == Jsonite
         presenter.new(resource).present options.merge root: nil
       end
 
-      root = options.fetch(:root) { Helper.resource_name(resource) }
       root ? { root => presented } : presented
+    end
+
+    # Sets the current presenter as the default for a given resource class.
+    #
+    #   class UserPresenter < Jsonite
+    #     presents User
+    #     property :email
+    #   end
+    #   Jsonite.present(User.first)
+    #   # => {"email"=>"stephen@example.com"}
+    def presents resource_class
+      @@mapping[resource_class] = self
+    end
+
+    # Returns the resource class registered to the current presenter.
+    #
+    #   class UserPresenter < Jsonite(User)
+    #     property :email
+    #   end
+    #   UserPresenter.resource_class
+    #   # => User
+    def resource_class
+      @@mapping.invert[self]
     end
 
     # Defines a property to be exposed during presentation.
@@ -59,8 +108,26 @@ class Jsonite
     #   present. Useful when you want to embed a resource as a property (rather
     #   than in the <tt>_embedded</tt> node).
     # * <tt>:ignore_nil</tt> - Ignore `nil`.
-    def property name, options = {}, &handler
-      properties[name.to_s] = { handler: handler }.merge options
+    #
+    # All other options are stored on the presenter class's properties hash,
+    # which could be used, for example, to generate documentation.
+    #
+    #   class UserPresenter < Jsonite
+    #     property :email, type: String
+    #   end
+    #   UserPresenter.properties[:email][:type]
+    #   # => String
+    #
+    # As a shorthand, type can also be documented if passed as the second
+    # argument.
+    #
+    #   class UserPresenter < Jsonite
+    #     property :email, String
+    #   end
+    #   UserPresenter.properties[:email][:type]
+    #   # => String
+    def property name, type = nil, **options, &handler
+      properties[name] = { type: type, handler: handler }.merge options
     end
 
     def properties *properties
@@ -107,7 +174,7 @@ class Jsonite
     #   #   }
     #   # }
     def link rel = :self, options = {}, &handler
-      links[rel.to_s] = { handler: Proc.new }.merge options # require handler
+      links[rel] = { handler: Proc.new }.merge options # require handler
     end
 
     def links
@@ -136,9 +203,9 @@ class Jsonite
     # * <tt>:with</tt> - A specified presenter. Required if a handler isn't
     #   present.
     # * <tt>:ignore_nil</tt> - Ignore `nil`.
-    def embed rel, options = {}, &handler
+    def embed rel, **options, &handler
       options.fetch :with unless handler
-      embedded[rel.to_s] = { handler: handler }.merge options
+      embedded[rel] = { handler: handler }.merge options
     end
 
     def embedded
@@ -164,11 +231,13 @@ class Jsonite
 
     private
 
-    def inherited presenter
-      presenter.properties.update properties
-      presenter.links.update links
-      presenter.embedded.update embedded
-      presenter.lets.update lets
+    def inherited subclass
+      subclass.presents resource_class if name.nil? && resource_class
+
+      subclass.properties.update properties
+      subclass.links.update links
+      subclass.embedded.update embedded
+      subclass.lets.update lets
     end
 
   end
@@ -199,7 +268,8 @@ class Jsonite
     _embedded = embedded proxied, context
     presented['_embedded'] = _embedded if _embedded.present?
 
-    root = options.fetch(:root) { Helper.resource_name(resource) }
+    root = options.fetch :root, Jsonite.include_root_in_json
+    root = Helper.resource_name resource if root == true
     root ? { root => presented } : presented
   end
 
@@ -255,4 +325,13 @@ class Jsonite
     value
   end
 
+end
+
+# Returns a new Jsonite subclass that presents the given resource class.
+#
+#   class UserPresenter < Jsonite(User)
+#     property :name
+#   end
+def Jsonite resource_class
+  Class.new(Jsonite).tap { |presenter| presenter.presents resource_class }
 end
