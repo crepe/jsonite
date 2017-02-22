@@ -1,4 +1,5 @@
 require 'active_support/core_ext/object/blank'
+require 'active_support/core_ext/hash/keys'
 require 'active_support/json/encoding'
 require 'jsonite/helper'
 require 'jsonite/lets_proxy'
@@ -107,7 +108,7 @@ class Jsonite
     #   #   }
     #   # }
     def link rel = :self, options = {}, &handler
-      links[rel.to_s] = { handler: Proc.new }.merge options # require handler
+      links[rel.to_s] = { handler: Proc.new }.merge options.deep_stringify_keys
     end
 
     def links
